@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en-us">
+
+<head>
+	<title>TRAIN SCHEDULE</title>
+	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/momentjs/2.12.0/moment.min.js"></script>
+	<link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+  <link rel="icon" href="01favicon.ico" type="image/x-icon">
+</head>
+
+<body>
+
+<nav class="navbar navbar-default">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand navbar-inverse">TRAIN SCHEDULE</a>
+    </div>
+
+    <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+      <ul class="nav navbar-nav navbar-right">
+        <li></li>
+          </ul>
+        </li>
+      </ul>
+    </div>
+  </div>
+  </nav>
+
+<div class="container">  
+<div class="row">
+  <div class="col-lg-12 col-md-12">
+	<div class="panel panel-default"> 
+    <div class="panel-body">
+    <h1>CURRENT TRAIN SCHEDULE</h1></div>
+	    <div class="panel-footer">
+			<table id="currentEmployees" class="table table-striped">
+				<tr>
+					<th>TRAIN NAME</th>
+					<th>DESTINATION</th>
+					<th>FREQUENCY IN MINUTES</th>
+					<th>NEXT ARRIVAL</th>
+          			<th>MINUTES TILL NEXT ARRIVAL</th>
+
+				</tr>
+			</table>
+	    </div>
+  </div></div>
+</div>
+
+<div class="row">
+  <div class="col-lg-12 col-md-12">
+	<div class="panel panel-default">
+    <div class="panel-body"> 
+    <h1>ADD TRAIN</h1></div>
+		<div class="panel-footer">
+    		<p>TRAIN NAME</p>
+    		<input type="text" id="trainName"><br>
+    		<p>DESTINATION</p>
+    		<input type="text" id="trainDest"><br>
+    		<p>FREQUENCY IN MINUTES</p>
+    		<input type="text" id="trainFreq"><br>
+    		<p>FIRST TRAIN TIME IN FORMAT HH:mm (military time)</p>
+    		<input type="text" id="trainFirstTime"><br>
+    		<button id="add">SUBMIT</button>
+     	</div>
+  </div></div>
+
+</div></div>
+</div>
+
+  <footer>@copyright Samuel Hill</footer>
+
+<script src="http://code.jquery.com/jquery-2.1.3.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/3.7.2/firebase.js"></script>
+<script type="text/javascript">
+//start
+$(document).ready(function() {
+	
+//current time var set
+currentTime=moment();
+console.log("CURRENT TIME: " + moment(currentTime).format("HH:mm"));
+//end current time var set
+
+  // Initialize Firebase
+  var config = {
+    apiKey: "AIzaSyBK4NHAht1Egltg7r3HZaYaQBSppCIJ8BU",
+    authDomain: "w7d2-aabc3.firebaseapp.com",
+    databaseURL: "https://w7d2-aabc3.firebaseio.com",
+    storageBucket: "w7d2-aabc3.appspot.com",
+    messagingSenderId: "742888638262"
+  };
+  firebase.initializeApp(config);
+
+var database=firebase.database(); //database value setting
+
+
+//to add to firebase
+$(add).on("click", function(e){
+
+	e.preventDefault();
+
+	var trainName = $("#trainName").val().trim();
+	console.log(trainName);
+	var trainDest = $("#trainDest").val().trim();
+	console.log(trainDest);
+	var trainFreq = $("#trainFreq").val().trim();
+	console.log(trainFreq);
+	var trainFirstTime = $("#trainFirstTime").val().trim();
+	console.log(trainFirstTime);
+
+  	var database=firebase.database(); 
+
+    database.ref().push({
+      trainName: trainName,
+      trainDest: trainDest,
+      trainFreq: trainFreq,
+      trainFirstTime: trainFirstTime
+    });
+});
+//end to add to firebase
+
+//return from firebase
+database.ref().on("child_added", function(childSnapshot) {
+	
+	console.log(childSnapshot.val()); //display all in firebase
+  
+	//setting first and freq
+	var first=moment(childSnapshot.val().trainFirstTime, "HH:mm").subtract(1, "years");
+		console.log(first);
+	var freq=JSON.parse(childSnapshot.val().trainFreq);
+		console.log("FREQUENCY: " + freq);
+	//end setting first and freq
+
+	//le maths
+	var diff=moment(currentTime).diff(moment(first), "minutes");
+		console.log("DIFFERENCE: " + diff);
+	var remainder = diff % freq;
+		console.log("REMAINDER: " + remainder);
+	var nextArrivalMin=freq-remainder; //minutes remaining set here
+		console.log("MINUTES REMAINING: " + nextArrivalMin);
+	var nextArrival=moment(currentTime).add(nextArrivalMin, "minutes").format("HH:mm");
+		console.log("NEXT TRAIN: " + nextArrival);
+
+	//var monthDiff=moment(date).diff(moment(), "months")*(-1);
+	//console.log(monthDiff);
+	//var totalBill=monthDiff*childSnapshot.val().rateWage;
+	//console.log(totalBill);
+
+  	$("#currentEmployees").append("<tr>" + 
+    	"<th>" + childSnapshot.val().trainName + "</th>" + 
+    	"<th>" + childSnapshot.val().trainDest + "</th>" +
+    	"<th>" + childSnapshot.val().trainFreq + "</th>" +
+    	"<th>" + nextArrival + "</th>" +
+    	"<th>" + nextArrivalMin + "</th>" + 
+
+    	"</tr>"
+	);
+
+});
+//end return from firebase
+
+}); //end of line
+</script>
+</body></html>
